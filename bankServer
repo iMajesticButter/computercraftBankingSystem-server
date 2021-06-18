@@ -87,6 +87,8 @@ function getUser(name)
 	user.balance = tonumber(file.readLine());
 	user.auth = false;
 
+	file.close();
+
 	print ("user: " .. user.name .. " has passhash: " .. user.passhash .. " salt: " .. user.salt .. " balance: " .. user.balance);
 
 	return user;
@@ -111,7 +113,21 @@ function getAndAuth(name, password)
 	return user;
 end
 
-
+function saveUser(user)
+	if user ~= nil
+		if user.auth
+			-- only save user if authorized
+			local path = USERS_DIRECTORY .. user.name;
+			local file = fs.open(path, "w");
+			file.writeLine(user.passhash);
+			file.writeLine(user.salt);
+			file.writeLine(user.balance);
+			file.close();
+			return true;
+		end
+	end
+	return false;
+end
 
 print ("ecnet started on address: " .. address);
 
@@ -120,6 +136,10 @@ modem.open(ADDRESS_CHANNEL);
 -- test
 makeUser("bob", "bobsPassword");
 local user = getAndAuth("bob", "bobsPassword");
+
+user.balance = user.balance + 10;
+
+saveUser(user);
 
 -- main program loop
 while true do
