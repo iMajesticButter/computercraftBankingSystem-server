@@ -30,17 +30,25 @@ function makeSalt()
 
 end
 
--- core functions
-function makeUser(name, password)
-	print ("make user" .. name .. ", " .. password);
+function userExists(name)
 	print ("checking if user with name " .. name .. " exists");
-
 	local path = USERS_DIRECTORY .. name;
-
 	if fs.exists(path) then
 		print ("user with name " .. name .. " already exists!");
 		return false;
 	end
+	return true;
+end
+
+-- core functions
+function makeUser(name, password)
+	print ("make user" .. name .. ", " .. password);
+	
+	if not userExists(name) then
+		return false;
+	end
+
+	local path = USERS_DIRECTORY .. name;
 
 	local file = fs.open(path, "w");
 
@@ -56,6 +64,8 @@ function makeUser(name, password)
 
 	file.close();
 
+	return true;
+
 end
 
 
@@ -64,6 +74,11 @@ end
 print ("ecnet started on address: " .. address);
 
 modem.open(ADDRESS_CHANNEL);
+
+-- test
+makeUser("bob", "bobsPassword");
+
+
 -- main program loop
 while true do
 	print ("program loop");
