@@ -34,6 +34,11 @@ if not fs.isDir(CONFIG_DIR) then
 	fs.makeDir(CONFIG_DIR)
 end
 
+if not fs.exists(ADMIN_PASSWORD) then
+	print ("please set admin password");
+	shell.run("setAdminPass");
+end
+
 -- utility functions
 function log(msg)
 	local file = fs.open(BANK_LOG_FILE, "a");

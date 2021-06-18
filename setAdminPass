@@ -23,8 +23,22 @@ function makeSalt()
 	return salt;
 
 end
+local pass = "";
 
-local pass = read();
+while true do
+	print("enter admin password");
+	pass = read("*");
+	
+	print("re-enter admin password");
+	local pass2 = read("*");
+
+	if pass == pass2 then
+		break;
+	end
+
+	print("passwords do not match!");
+end
+
 local salt = makeSalt();
 
 local file = fs.open(ADMIN_PASSWORD, "w");
