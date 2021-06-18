@@ -1,0 +1,5 @@
+os.loadAPI("hash")
+
+print("test message: " .. hash.hash("test message"));
+print("test_message: " .. hash.hash("test_message"));
+print("test message: " .. hash.hash("test message"));
