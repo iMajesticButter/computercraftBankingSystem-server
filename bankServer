@@ -155,7 +155,11 @@ function checkAuthedAddress(add) -- check if message is coming from an address t
 	local file = fs.open(ADDRESS_LIST, "r");
 
 	local a = "";
-	while a = file.readLine() and a ~= nil do
+	while true do
+		a = file.readLine()
+		if a == nil then
+			break;
+		end
 		if a == add then
 			file.close();
 			return true;
