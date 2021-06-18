@@ -92,6 +92,13 @@ function getUser(name)
 
 end
 
+function authUser(user, password) {
+	if hash.hash(password .. user.salt) == user.passhash then
+		return true;
+	end
+	return false;
+}
+
 
 
 print ("ecnet started on address: " .. address);
@@ -100,7 +107,8 @@ modem.open(ADDRESS_CHANNEL);
 
 -- test
 makeUser("bob", "bobsPassword");
-getUser("bob");
+local user getUser("bob");
+print("user auth: " .. authUser(user, "bobsPassword"));
 
 -- main program loop
 while true do
