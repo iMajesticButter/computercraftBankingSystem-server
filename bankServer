@@ -1,5 +1,38 @@
-os.loadAPI("hash")
+os.loadAPI("hash");
+local ecnet = require("ecnet");
 
-print("test message: " .. hash.hash("test message"));
-print("test_message: " .. hash.hash("test_message"));
-print("test message: " .. hash.hash("test message"));
+local ADDRESS_CHANNEL = 25783;
+local modem = peripheral.find("modem");
+local s_modem = ecnet.wrap(modem);
+
+local address = ecnet.address;
+print ("ecnet started on address: " .. address);
+
+modem.open(ADDRESS_CHANNEL);
+-- main program loop
+while true do
+	print ("program loop");
+	parallel.waitForAny(
+		function()
+			s_modem.listen();
+		end, 
+		function()
+			while true do
+				local _, from, message = os.pullEvent("ecnet_message");
+				print ("ecnet message recieved");
+			end
+		end,
+		function()
+			while true do
+				local event, modemSide, senderChannel, replyChannel, message, distance = os.pullEvent("modem_message");
+
+				if(senderChannel == ADDRESS_CHANNEL) then
+					if(message == "DNS_REQ BANK") then
+						print ("modem address request message recieved");
+						modem.transmit(replyChannel, ADDRESS_CHANNEL, address);
+					end
+				end
+
+			end
+		end)
+end
