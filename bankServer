@@ -12,12 +12,13 @@ local CONFIG_DIR = "/config/";
 local ADDRESS_LIST = CONFIG_DIR .. "authorizedAddresses";
 local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
 
-local NETWORK_ADDUSER = "NETWORK_ADDUSER"; -- add a new user to the database
-local NETWORK_AUTHUSER = "NETWORK_AUTHUSER"; -- check if the users credentials are correct, sends back a boolean
+local NETWORK_ADDUSERDAT = "NETWORK_ADDUSERDAT"; -- add a new user to the database
+local NETWORK_ISAUTHUSER = "NETWORK_ISAUTHUSER"; -- check if the users credentials are correct, sends back a boolean
 local NETWORK_GETBALANCE = "NETWORK_GETBALANCE"; -- gets users balance, requires auth
 local NETWORK_ADDBALANCE = "NETWORK_ADDBALANCE"; -- adds to users balance, requires auth
 local NETWORK_SUBBALANCE = "NETWORK_SUBBALANCE"; -- subtracts from users balance, requires auth
 local NETWORK_ADDADDRESS = "NETWORK_ADDADDRESS"; -- add an address that is authorized to do ATM stuff, requires a special password
+local NETWORK_ISAUTHADDR = "NETWORK_ISAUTHADDR"; -- ask if address is authed
 
 
 if not fs.isDir(USERS_DIRECTORY) then
@@ -212,6 +213,15 @@ while true do
 			while true do
 				local _, from, message = os.pullEvent("ecnet_message");
 				print ("ecnet message recieved: " .. message);
+
+				if type(message) == "table" then
+					print ("table message format");
+					if message.type == NETWORK_ADDADDRESS then
+						print ("NETWORK_ADDADDRESS");
+						addAuthedAddress(from, message.pass);
+					end
+				end
+
 			end
 		end,
 		function()

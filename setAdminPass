@@ -28,7 +28,7 @@ local pass = read();
 local salt = makeSalt();
 
 local file = fs.open(ADMIN_PASSWORD, "w");
-file.writeLine(hash.hash(pass .. salt));
+file.writeLine(hash.hash(hash.hash(pass) .. salt));
 file.writeLine(salt);
 
 print("password updated!");
