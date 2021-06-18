@@ -14,7 +14,7 @@ if not fs.isDir(USERS_DIRECTORY) then
 	fs.makeDir(USERS_DIRECTORY)
 end
 
-
+-- utility functions
 function makeSalt()
 
 	all = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{}:',.<>/?=+-_!@#$%^&*()\\|[];"
@@ -42,13 +42,13 @@ end
 
 -- core functions
 function makeUser(name, password)
-	print ("make user: " .. name .. ", " .. password);
+	print ("make user: " .. name);
 	
 	if not userExists(name) then
 		return false;
 	end
 
-	print ("creating user user: " .. name);
+	print ("creating user: " .. name);
 
 	local path = USERS_DIRECTORY .. name;
 
@@ -62,7 +62,7 @@ function makeUser(name, password)
 
 	file.writeLine(passhash);
 	file.writeLine(salt);
-	file.writeLine(0);
+	file.writeLine(tostring(0));
 
 	file.close();
 
@@ -70,6 +70,27 @@ function makeUser(name, password)
 
 end
 
+function getUser(name)
+
+	if not userExists(name) then
+		return nil;
+	end
+
+	local path = USERS_DIRECTORY .. name;
+	local file = fs.open(path, "r");
+
+	local user = {};
+
+	user.name = name;
+	user.passhash = file.readLine();
+	user.salt = file.readLine();
+	user.balance = tonumber(file.readLine());
+
+	print ("user: " .. user.name .. " has passhash: " .. user.passhash .. " salt: " .. user.salt .. " balance: " .. user.balance);
+
+	return user;
+
+end
 
 
 
@@ -79,7 +100,7 @@ modem.open(ADDRESS_CHANNEL);
 
 -- test
 makeUser("bob", "bobsPassword");
-
+getUser("bob");
 
 -- main program loop
 while true do
