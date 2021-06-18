@@ -113,7 +113,7 @@ modem.open(ADDRESS_CHANNEL);
 makeUser("bob", "bobsPassword");
 local user = getUser("bob");
 authUser(user, "bobsPassword");
-print(tostring(user.auth));
+print("user.auth: " .. tostring(user.auth));
 
 -- main program loop
 while true do
