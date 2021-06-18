@@ -7,11 +7,27 @@ local s_modem = ecnet.wrap(modem);
 
 local address = ecnet.address;
 
-local USERS_DIRECTORY = "/users/"
+local USERS_DIRECTORY = "/users/";
+local CONFIG_DIR = "/config/";
+local ADDRESS_LIST = CONFIG_DIR .. "authorizedAddresses";
+local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
+
+local NETWORK_ADDUSER = "NETWORK_ADDUSER"; -- add a new user to the database
+local NETWORK_AUTHUSER = "NETWORK_AUTHUSER"; -- check if the users credentials are correct, sends back a boolean
+local NETWORK_GETBALANCE = "NETWORK_GETBALANCE"; -- gets users balance, requires auth
+local NETWORK_ADDBALANCE = "NETWORK_ADDBALANCE"; -- adds to users balance, requires auth
+local NETWORK_SUBBALANCE = "NETWORK_SUBBALANCE"; -- subtracts from users balance, requires auth
+local NETWORK_ADDADDRESS = "NETWORK_ADDADDRESS"; -- add an address that is authorized to do ATM stuff, requires a special password
+
 
 if not fs.isDir(USERS_DIRECTORY) then
 	print ("creating users directory");
 	fs.makeDir(USERS_DIRECTORY)
+end
+
+if not fs.isDir(CONFIG_DIR) then
+	print ("creating config directory");
+	fs.makeDir(CONFIG_DIR)
 end
 
 -- utility functions
@@ -113,20 +129,64 @@ function getAndAuth(name, password)
 	return user;
 end
 
-function saveUser(user)
+function saveUser(user, add)
 	if user ~= nil then
-		if user.auth then
-			-- only save user if authorized
-			local path = USERS_DIRECTORY .. user.name;
-			local file = fs.open(path, "w");
-			file.writeLine(user.passhash);
-			file.writeLine(user.salt);
-			file.writeLine(user.balance);
+		local path = USERS_DIRECTORY .. user.name;
+		local file = fs.open(path, "w");
+		file.writeLine(user.passhash);
+		file.writeLine(user.salt);
+		file.writeLine(user.balance);
+		file.close();
+		return true;
+	end
+	return false;
+end
+
+function checkAuthedAddress(add) -- check if message is coming from an address that has previously been authourized
+	-- not nescessary for account-to-account transfers, that will only require auth form account that is paying
+	-- this is for ATM's and sutch (things that can add money from physical currency)
+	-- just an extra security layer so you cant just make a fake ATM
+	if not fs.exists(ADDRESS_LIST) then
+		print("WARNING, no addresses authourized");
+		return false;
+	end
+
+	local file = fs.open(ADDRESS_LIST, "r");
+
+	local a = "";
+	while a = file.readLine() ~= nil do
+		if a == add then
 			file.close();
 			return true;
 		end
 	end
+	file.close();
 	return false;
+
+end
+
+function addAuthedAddress(add, password) 
+
+	if not fs.exists(ADMIN_PASSWORD) then
+		print("WARNING, no admin password set");
+		return false;
+	end
+
+	local file = fs.open(ADMIN_PASSWORD, "r");
+	local hashpass = file.readLine();
+	local salt = file.readLine();
+	file.close();
+
+	if hash.hash(password .. salt) == hashpass then
+
+		local addF = fs.open(ADDRESS_LIST, fs.exists(ADDRESS_LIST) and "a" or "w");
+		addF.writeLine(add);
+		addF.close();
+
+		return true;
+	end
+	return false;
+
 end
 
 print ("ecnet started on address: " .. address);

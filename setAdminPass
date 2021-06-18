@@ -1,0 +1,34 @@
+os.loadAPI("hash");
+
+local CONFIG_DIR = "/config/";
+local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
+
+if not fs.isDir(CONFIG_DIR) then
+	print ("creating config directory");
+	fs.makeDir(CONFIG_DIR)
+end
+
+-- utility functions
+function makeSalt()
+
+	all = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{}:',.<>/?=+-_!@#$%^&*()\\|[];"
+
+	salt = ""
+
+	for i = 1, 15 do
+		r = math.random(#all);
+		salt = salt.. string.sub(all, r, r);
+	end
+
+	return salt;
+
+end
+
+local pass = read();
+local salt = makeSalt();
+
+local file = fs.open(ADMIN_PASSWORD, "w");
+file.writeLine(hash.hash(pass .. salt));
+file.writeLine(salt);
+
+print("password updated!");
