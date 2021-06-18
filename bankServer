@@ -85,6 +85,7 @@ function getUser(name)
 	user.passhash = file.readLine();
 	user.salt = file.readLine();
 	user.balance = tonumber(file.readLine());
+	user.auth = false;
 
 	print ("user: " .. user.name .. " has passhash: " .. user.passhash .. " salt: " .. user.salt .. " balance: " .. user.balance);
 
@@ -94,8 +95,11 @@ end
 
 function authUser(user, password)
 	if hash.hash(password .. user.salt) == user.passhash then
+		print("authorized user: " .. user);
+		user.auth = true;
 		return true;
 	end
+	print("failed to authorize user: " .. user);
 	return false;
 end
 
@@ -108,7 +112,8 @@ modem.open(ADDRESS_CHANNEL);
 -- test
 makeUser("bob", "bobsPassword");
 local user = getUser("bob");
-print("user auth: " .. tostring(authUser(user, "notbobsPassword")));
+authUser(user, "bobsPassword");
+print(tostring(user.auth));
 
 -- main program loop
 while true do
