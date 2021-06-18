@@ -34,17 +34,17 @@ function userExists(name)
 	print ("checking if user with name " .. name .. " exists");
 	local path = USERS_DIRECTORY .. name;
 	if fs.exists(path) then
-		print ("user with name " .. name .. " already exists!");
-		return false;
+		return true;
 	end
-	return true;
+	return false;
 end
 
 -- core functions
 function makeUser(name, password)
 	print ("make user: " .. name);
 	
-	if not userExists(name) then
+	if userExists(name) then
+		print ("user with name " .. name .. " already exists!");
 		return false;
 	end
 
