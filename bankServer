@@ -19,7 +19,7 @@ while true do
 		function()
 			while true do
 				local _, from, message = os.pullEvent("ecnet_message");
-				print ("ecnet message recieved");
+				print ("ecnet message recieved: " .. message);
 			end
 		end,
 		function()
