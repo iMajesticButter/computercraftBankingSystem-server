@@ -6,6 +6,61 @@ local modem = peripheral.find("modem");
 local s_modem = ecnet.wrap(modem);
 
 local address = ecnet.address;
+
+local USERS_DIRECTORY = "/users/"
+
+if not fs.isDir(USERS_DIRECTORY) then
+	print ("creating users directory");
+	fs.makeDir(USERS_DIRECTORY)
+end
+
+
+function makeSalt()
+
+	all = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{}:',.<>/?=+-_!@#$%^&*()\\|[];"
+
+	salt = ""
+
+	for i = 1, 15 do
+		r = math.random(#all);
+		salt = salt.. string.sub(all, r, r);
+	end
+
+	return salt;
+
+end
+
+-- core functions
+function makeUser(name, password)
+	print ("make user" .. name .. ", " .. password);
+	print ("checking if user with name " .. name .. " exists");
+
+	local path = USERS_DIRECTORY .. name;
+
+	if fs.exists(path) then
+		print ("user with name " .. name .. " already exists!");
+		return false;
+	end
+
+	local file = fs.open(path, "w");
+
+	local salt = makeSalt();
+	print("salt is: " .. salt);
+
+	local passhash = hash.hash(password .. salt);
+	print("passhash is: " .. passhash);
+
+	file.writeLine(passhash);
+	file.writeLine(salt);
+	file.writeLine(0);
+
+	file.close();
+
+end
+
+
+
+
 print ("ecnet started on address: " .. address);
 
 modem.open(ADDRESS_CHANNEL);
