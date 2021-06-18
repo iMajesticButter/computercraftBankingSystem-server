@@ -95,11 +95,11 @@ end
 
 function authUser(user, password)
 	if hash.hash(password .. user.salt) == user.passhash then
-		print("authorized user: " .. user);
+		print("authorized user: " .. user.name);
 		user.auth = true;
 		return true;
 	end
-	print("failed to authorize user: " .. user);
+	print("failed to authorize user: " .. user.name);
 	return false;
 end
 
