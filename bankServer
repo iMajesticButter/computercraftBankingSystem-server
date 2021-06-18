@@ -42,11 +42,13 @@ end
 
 -- core functions
 function makeUser(name, password)
-	print ("make user" .. name .. ", " .. password);
+	print ("make user: " .. name .. ", " .. password);
 	
 	if not userExists(name) then
 		return false;
 	end
+
+	print ("creating user user: " .. name);
 
 	local path = USERS_DIRECTORY .. name;
 
