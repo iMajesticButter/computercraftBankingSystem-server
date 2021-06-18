@@ -108,7 +108,7 @@ modem.open(ADDRESS_CHANNEL);
 -- test
 makeUser("bob", "bobsPassword");
 local user = getUser("bob");
-print("user auth: " .. tostring(authUser(user, "bobsPassword")));
+print("user auth: " .. tostring(authUser(user, "notbobsPassword")));
 
 -- main program loop
 while true do
