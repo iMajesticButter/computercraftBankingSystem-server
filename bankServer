@@ -112,8 +112,9 @@ modem.open(ADDRESS_CHANNEL);
 -- test
 makeUser("bob", "bobsPassword");
 local user = getUser("bob");
-authUser(user, "bobsPassword");
 print("user.auth: " .. tostring(user.auth));
+authUser(user, "bobsPassword");
+print("user.auth: " .. tostring(user.auth)); -- holy shit it actually passed it by reference
 
 -- main program loop
 while true do
