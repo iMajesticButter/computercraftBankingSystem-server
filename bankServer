@@ -11,16 +11,18 @@ local USERS_DIRECTORY = "/users/";
 local CONFIG_DIR = "/config/";
 local ADDRESS_LIST = CONFIG_DIR .. "authorizedAddresses";
 local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
+local BANK_LOG_FILE = "bankLog";
 
 local NETWORK_BKRESPONSE = "NETWORK_BKRESPONSE"; -- response to client
 local NETWORK_ADDUSERDAT = "NETWORK_ADDUSERDAT"; -- add a new user to the database
 local NETWORK_ISAUTHUSER = "NETWORK_ISAUTHUSER"; -- check if the users credentials are correct, sends back a boolean
 local NETWORK_GETBALANCE = "NETWORK_GETBALANCE"; -- gets users balance, requires auth
-local NETWORK_ADDBALANCE = "NETWORK_ADDBALANCE"; -- adds to users balance, requires auth
-local NETWORK_SUBBALANCE = "NETWORK_SUBBALANCE"; -- subtracts from users balance, requires auth
+local NETWORK_MODBALANCE = "NETWORK_MODBALANCE"; -- adds/subtracts from users balance, requires auth
 local NETWORK_ADDADDRESS = "NETWORK_ADDADDRESS"; -- add an address that is authorized to do ATM stuff, requires a special password
 local NETWORK_ISAUTHADDR = "NETWORK_ISAUTHADDR"; -- ask if address is authed
+local NETWORK_CHARGERAIL = "NETWORK_CHARGERAIL"; -- charge user for railway fair this exists so I can change all rail fairs server-side, may add a seprate price server in future and get rid of this
 
+local railFair = 2;
 
 if not fs.isDir(USERS_DIRECTORY) then
 	print ("creating users directory");
@@ -33,6 +35,12 @@ if not fs.isDir(CONFIG_DIR) then
 end
 
 -- utility functions
+function log(msg)
+	local file = fs.open(BANK_LOG_FILE, "a");
+	file.writeLine("[" .. os.epoch("utc") .. "] " .. msg);
+	file.close();
+end
+
 function makeSalt()
 
 	all = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{}:',.<>/?=+-_!@#$%^&*()\\|[];"
@@ -84,6 +92,8 @@ function makeUser(name, password)
 
 	file.close();
 
+	log("User created: " .. name);
+
 	return true;
 
 end
@@ -117,6 +127,7 @@ function authUser(user, password)
 	if user ~= nil then -- not equal is ~= because lua has to be different
 		if hash.hash(password .. user.salt) == user.passhash then
 			print("authorized user: " .. user.name);
+			log("User authorized: " .. user.name);
 			user.auth = true; -- holy shit it actually passed it by reference, did not expect that to work...
 			return true;
 		end
@@ -131,7 +142,7 @@ function getAndAuth(name, password)
 	return user;
 end
 
-function saveUser(user, add)
+function saveUser(user)
 	if user ~= nil then
 		local path = USERS_DIRECTORY .. user.name;
 		local file = fs.open(path, "w");
@@ -139,6 +150,7 @@ function saveUser(user, add)
 		file.writeLine(user.salt);
 		file.writeLine(user.balance);
 		file.close();
+		log("User data modified: " .. user.name);
 		return true;
 	end
 	return false;
@@ -163,6 +175,7 @@ function checkAuthedAddress(add) -- check if message is coming from an address t
 		end
 		if a == add then
 			file.close();
+			log("Authourized address checked: " .. add);
 			return true;
 		end
 	end
@@ -189,6 +202,8 @@ function addAuthedAddress(add, password)
 		addF.writeLine(add);
 		addF.close();
 
+		log("Authourized address added: " .. add);
+
 		return true;
 	end
 	return false;
@@ -198,15 +213,6 @@ end
 print ("ecnet started on address: " .. address);
 
 modem.open(ADDRESS_CHANNEL);
-
--- test
-makeUser("bob", "bobsPassword");
-local user = getAndAuth("bob", "bobsPassword");
-
-user.balance = user.balance + 10;
-
-saveUser(user);
-
 -- main program loop
 while true do
 	print ("program loop");
@@ -222,12 +228,101 @@ while true do
 				if type(message) == "table" then
 					print ("table message format");
 					if message.type == NETWORK_ADDADDRESS then
+
 						print ("NETWORK_ADDADDRESS");
+						log("Request to authorize address from: " .. from);
+
 						local auth = addAuthedAddress(from, message.pass);
+
 						s_modem.send(from, auth);
+
+					elseif message.type == NETWORK_ADDUSERDAT then
+
+						print ("NETWORK_ADDUSERDAT");
+						log("Request to add user: " .. message.name .. " from: " .. from);
+
+						local added = makeUser(message.name, message.pass);
+
+						s_modem.send(from, added);
+
+					elseif message.type == NETWORK_ISAUTHUSER then
+
+						print ("NETWORK_ISAUTHUSER");
+						log("Authentication request from: " .. from .. " for user: " .. message.name);
+
+						local user = getAndAuth(message.name, message.pass);
+
+						if user ~= nil then
+							s_modem.send(from, user.auth);
+						else
+							s_modem.send(from, false);
+						end
+
+					elseif message.type == NETWORK_GETBALANCE then
+
+						print ("NETWORK_GETBALANCE");
+						log("Balance request from: " .. from .. " for user: " .. message.name);
+
+						local user = getAndAuth(message.name, message.pass);
+
+						local dat = {};
+
+						dat.bal = 0;
+						dat.auth = false;
+
+						if user ~= nil then
+							dat.auth = user.auth;
+							if user.auth then
+								dat.bal = user.balance;
+							end
+						end
+						s_modem.send(from, dat);
+					elseif message.type == NETWORK_MODBALANCE then
+
+						-- this has extra security so only authorized devices can do this
+						-- don't want fake ATM's that just add to your balance now do we?
+						print ("NETWORK_MODBALANCE");
+						log("Balance change from: " .. from .. " for user: " .. message.name .. " by ammount: " .. message.val);
+
+						local authAddr = checkAuthedAddress(from);
+						local success = false;
+						if authAddr then
+							local user = getAndAuth(message.name, message.pass);
+							if user.auth then
+								if user.balance + message.val >= 0 then
+
+									user.balance = user.balance + message.val;
+									saveUser(user);
+									success = true;
+
+								end
+							end
+						end
+						s_modem.send(from, success);
+					elseif message.type == NETWORK_ISAUTHADDR then
+						print ("NETWORK_ISAUTHADDR");
+						log("NETWORK_ISAUTHADDR from: " .. from);
+						s_modem.send(from, checkAuthedAddress(from));
+					elseif message.type == NETWORK_CHARGERAIL then
+
+						print ("NETWORK_CHARGERAIL");
+						log("Rail Fair Balance change from: " .. from .. " for user: " .. message.name .. " by ammount: " .. railFair);
+
+						local success = false;
+						local user = getAndAuth(message.name, message.pass);
+						if user.auth then
+							if user.balance - railFair >= 0 then
+
+								user.balance = user.balance - railFair;
+								saveUser(user);
+								success = true;
+
+							end
+						end
+						s_modem.send(from, success);
+
 					end
 				end
-
 			end
 		end,
 		function()
