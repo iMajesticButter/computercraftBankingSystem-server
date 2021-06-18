@@ -106,7 +106,7 @@ function authUser(user, password)
 end
 
 function getAndAuth(name, password)
-	local user = GetUser(name);
+	local user = getUser(name);
 	authUser(user, password);
 	return user;
 end
