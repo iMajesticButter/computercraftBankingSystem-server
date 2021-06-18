@@ -12,6 +12,7 @@ local CONFIG_DIR = "/config/";
 local ADDRESS_LIST = CONFIG_DIR .. "authorizedAddresses";
 local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
 
+local NETWORK_BKRESPONSE = "NETWORK_BKRESPONSE"; -- response to client
 local NETWORK_ADDUSERDAT = "NETWORK_ADDUSERDAT"; -- add a new user to the database
 local NETWORK_ISAUTHUSER = "NETWORK_ISAUTHUSER"; -- check if the users credentials are correct, sends back a boolean
 local NETWORK_GETBALANCE = "NETWORK_GETBALANCE"; -- gets users balance, requires auth
@@ -216,13 +217,14 @@ while true do
 		function()
 			while true do
 				local _, from, message = os.pullEvent("ecnet_message");
-				print ("ecnet message recieved: " .. message);
+				print ("ecnet message recieved from: " .. from);
 
 				if type(message) == "table" then
 					print ("table message format");
 					if message.type == NETWORK_ADDADDRESS then
 						print ("NETWORK_ADDADDRESS");
-						addAuthedAddress(from, message.pass);
+						local auth = addAuthedAddress(from, message.pass);
+						s_modem.send(from, auth);
 					end
 				end
 
