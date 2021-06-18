@@ -114,8 +114,8 @@ function getAndAuth(name, password)
 end
 
 function saveUser(user)
-	if user ~= nil
-		if user.auth
+	if user ~= nil then
+		if user.auth then
 			-- only save user if authorized
 			local path = USERS_DIRECTORY .. user.name;
 			local file = fs.open(path, "w");
