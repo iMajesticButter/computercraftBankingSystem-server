@@ -92,12 +92,12 @@ function getUser(name)
 
 end
 
-function authUser(user, password) {
+function authUser(user, password)
 	if hash.hash(password .. user.salt) == user.passhash then
 		return true;
 	end
 	return false;
-}
+end
 
 
 
