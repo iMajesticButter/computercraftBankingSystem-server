@@ -94,13 +94,21 @@ function getUser(name)
 end
 
 function authUser(user, password)
-	if hash.hash(password .. user.salt) == user.passhash then
-		print("authorized user: " .. user.name);
-		user.auth = true;
-		return true;
+	if user ~= nil then -- not equal is ~= because lua has to be different
+		if hash.hash(password .. user.salt) == user.passhash then
+			print("authorized user: " .. user.name);
+			user.auth = true; -- holy shit it actually passed it by reference, did not expect that to work...
+			return true;
+		end
+		print("failed to authorize user: " .. user.name);
 	end
-	print("failed to authorize user: " .. user.name);
 	return false;
+end
+
+function getAndAuth(name, password)
+	local user = GetUser(name);
+	authUser(user, password);
+	return user;
 end
 
 
@@ -111,10 +119,7 @@ modem.open(ADDRESS_CHANNEL);
 
 -- test
 makeUser("bob", "bobsPassword");
-local user = getUser("bob");
-print("user.auth: " .. tostring(user.auth));
-authUser(user, "bobsPassword");
-print("user.auth: " .. tostring(user.auth)); -- holy shit it actually passed it by reference
+local user = getAndAuth("bob", "bobsPassword");
 
 -- main program loop
 while true do
