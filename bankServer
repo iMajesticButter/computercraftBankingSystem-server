@@ -8,6 +8,7 @@ local s_modem = ecnet.wrap(modem);
 local address = ecnet.address;
 
 local USERS_DIRECTORY = "/users/";
+local USERS_LOG_DIRECTORY = USERS_DIRECTORY .. "/logs/";
 local CONFIG_DIR = "/config/";
 local ADDRESS_LIST = CONFIG_DIR .. "authorizedAddresses";
 local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
@@ -16,6 +17,10 @@ local BANK_LOG_FILE = "bankLog";
 local UPDATE_CHANNEL = 3618;
 local UPDATE_PASS = "c7e4aa65f0544bbebdef75efc30643bce6debb11b302e59ad9e28ef2ad2b0a0d"
 
+local PRICE_TABLE = "/prices/";
+
+local TRANSFER_FEE = 0.25;
+
 local NETWORK_BKRESPONSE = "NETWORK_BKRESPONSE"; -- response to client
 local NETWORK_ADDUSERDAT = "NETWORK_ADDUSERDAT"; -- add a new user to the database
 local NETWORK_ISAUTHUSER = "NETWORK_ISAUTHUSER"; -- check if the users credentials are correct, sends back a boolean
@@ -23,7 +28,10 @@ local NETWORK_GETBALANCE = "NETWORK_GETBALANCE"; -- gets users balance, requires
 local NETWORK_MODBALANCE = "NETWORK_MODBALANCE"; -- adds/subtracts from users balance, requires auth
 local NETWORK_ADDADDRESS = "NETWORK_ADDADDRESS"; -- add an address that is authorized to do ATM stuff, requires a special password
 local NETWORK_ISAUTHADDR = "NETWORK_ISAUTHADDR"; -- ask if address is authed
-local NETWORK_CHARGERAIL = "NETWORK_CHARGERAIL"; -- charge user for railway fair this exists so I can change all rail fairs server-side, may add a seprate price server in future and get rid of this
+local NETWORK_SERCHPRICE = "NETWORK_SERCHPRICE"; -- get a price from the price table
+local NETWORK_CAHRGPRICE = "NETWORK_CAHRGPRICE"; -- charge price
+local NETWORK_TRANSFERDI = "NETWORK_TRANSFERDI"; -- transfer diamonds to another account
+local NETWORK_GETHISTORY = "NETWORK_GETHISTORY"; -- get user account history
 
 local railFair = 2;
 
@@ -37,6 +45,11 @@ if not fs.isDir(CONFIG_DIR) then
 	fs.makeDir(CONFIG_DIR)
 end
 
+if not fs.isDir(PRICE_TABLE) then
+	print ("creating price table directory");
+	fs.makeDir(PRICE_TABLE)
+end
+
 if not fs.exists(ADMIN_PASSWORD) then
 	print ("please set admin password");
 	shell.run("setAdminPass");
@@ -45,8 +58,17 @@ end
 -- utility functions
 function log(msg)
 	local file = fs.open(BANK_LOG_FILE, "a");
-	file.writeLine("[" .. os.epoch("utc") .. "] " .. msg);
+	file.writeLine("[" .. textutils.formatTime(os.time()) .. ", day: ".. os.day() .. 
+		", realtime: " .. os.epoch("") .. "] " .. msg);
 	file.close();
+	print("[log] " .. msg);
+end
+
+function userLog(user, msg) -- log to user log (requestable by user)
+	local file = fs.open(USERS_LOG_DIRECTORY .. user, "a");
+	file.writeLine("[" .. textutils.formatTime(os.time()) .. ", day: ".. os.day() .. "] " .. msg);
+	file.close();
+	print("[userlog: " .. user .. "] "msg);
 end
 
 function makeSalt()
@@ -218,6 +240,51 @@ function addAuthedAddress(add, password)
 
 end
 
+function getPrice(tag)
+	if fs.exists(PRICE_TABLE .. tag) then
+		local file = fs.open(PRICE_TABLE .. tag, "r");
+		local ammount = file.readLine();
+		file.close();
+		return ammount;
+	end
+	-- dont return 0, that may cause things to give stuff away for free that they are not supposed to
+	return 100000;
+end
+
+function setPrice(tag, ammount)
+	local file = fs.open(PRICE_TABLE .. tag, "w");
+	file.writeLine(ammount);
+	file.close();
+end
+
+function transfer(fromName, fromPassword, toName, ammount)
+
+	local from = getAndAuth(fromName, fromPassword);
+	local to = getUser(toName);
+
+	if ammount >= 0 then
+		if from ~= nil then
+			if to ~= nil then
+				if from.auth then
+					if from.balance - ammount >= 0 then
+						from.balance = from.balance - ammount;
+						to.balance = to.balance + (ammount - TRANSFER_FEE);
+
+						saveUser(from);
+						saveUser(to);
+
+						userLog(fromName, "transfer to: " .. toName .. " of " .. ammount .. " diamonds");
+						userLog(toName, "transfer from: " .. fromName .. " of " .. ammount .. " diamonds");
+
+						return true;
+					end
+				end
+			end
+		end
+	end
+	return false;
+end
+
 print ("ecnet started on address: " .. address);
 
 modem.open(ADDRESS_CHANNEL);
@@ -299,6 +366,8 @@ while true do
 							if user.auth then
 								if user.balance + message.val >= 0 then
 
+									userLog(message.name, "balance change from: " .. user.balance .. " to: " .. user.balance + message.val);
+
 									user.balance = user.balance + message.val;
 									saveUser(user);
 									success = true;
@@ -311,24 +380,51 @@ while true do
 						print ("NETWORK_ISAUTHADDR");
 						log("NETWORK_ISAUTHADDR from: " .. from);
 						s_modem.send(from, checkAuthedAddress(from));
-					elseif message.type == NETWORK_CHARGERAIL then
+					elseif message.type == NETWORK_SERCHPRICE then
+						print ("NETWORK_SERCHPRICE");
+						log("Price search: " .. from);
+						s_modem.send(from, getPrice(message.tag));
+					elseif message.type == NETWORK_CAHRGPRICE then
+						print ("NETWORK_CAHRGPRICE");
 
-						print ("NETWORK_CHARGERAIL");
-						log("Rail Fair Balance change from: " .. from .. " for user: " .. message.name .. " by ammount: " .. railFair);
+						local price = getPrice(message.tag);
 
+						log("Charge price request: " .. from .. " for user: " .. message.name .. " for tag: " .. message.tag .. " of ammount: " .. price);
+						
 						local success = false;
 						local user = getAndAuth(message.name, message.pass);
 						if user.auth then
-							if user.balance - railFair >= 0 then
-
-								user.balance = user.balance - railFair;
-								saveUser(user);
-								success = true;
-
+							if user.balance - price >= 0 then
+								if price >= 0 then -- just make sure...
+									user.balance = user.balance - price;
+									saveUser(user);
+									success = true;
+									userLog(message.name, "charge of: " .. price .. " diamonds");
+								end
 							end
 						end
-						s_modem.send(from, success);
 
+						s_modem.send(from, success);
+					elseif message.type == NETWORK_TRANSFERDI then
+						print ("NETWORK_TRANSFERDI");
+						log("Diamond transfer request from: " .. from .. " from user: " .. message.name .. " to user: " .. message.to .. " of ammount: " .. message.val);
+
+						s_modem.send(from, transfer(message.name, message.pass, message.to, message.val));
+					elseif message.type == NETWORK_GETHISTORY then
+						print ("NETWORK_GETHISTORY");
+						log("History request from: " .. from .. " for user: " .. message.name);
+
+						local result = ""
+
+						local user = getAndAuth(message.name, message.pass);
+						if user.auth then
+							if fs.exists(USERS_LOG_DIRECTORY .. message.name) then
+								local file = fs.open(USERS_LOG_DIRECTORY .. message.name, "r");
+								result = file.readAll();
+							end
+						end
+
+						s_modem.send(from, result);
 					end
 				end
 			end
