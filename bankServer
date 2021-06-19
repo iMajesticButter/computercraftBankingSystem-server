@@ -245,7 +245,7 @@ end
 function getPrice(tag)
 	if fs.exists(PRICE_TABLE .. tag) then
 		local file = fs.open(PRICE_TABLE .. tag, "r");
-		local ammount = file.readLine();
+		local ammount = tonumber(file.readLine());
 		file.close();
 		return ammount;
 	end
@@ -531,7 +531,6 @@ function program()
 	end
 end
 
-program();
 
 while running do
 	pcall(program);
