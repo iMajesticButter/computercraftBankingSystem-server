@@ -456,7 +456,7 @@ while true do
 
 											local moved = 0;
 
-											for slot, item in pairs(bankChest.list()) do
+											for s, item in pairs(bankChest.list()) do
 												if item.name == "minecraft:diamond" then
 													moved = moved + item.count;
 													if ammount - moved >= item.count then
@@ -479,7 +479,6 @@ while true do
 								end
 							end
 						end
-						sleep(1000);
 						s_modem.send(from, succsess);
 
 					end
