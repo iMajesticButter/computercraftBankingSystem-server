@@ -531,6 +531,8 @@ function program()
 	end
 end
 
+program();
+
 while running do
 	pcall(program);
 	print("program close!");
