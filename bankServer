@@ -479,7 +479,7 @@ while true do
 								end
 							end
 						end
-
+						sleep(1000);
 						s_modem.send(from, succsess);
 
 					end
