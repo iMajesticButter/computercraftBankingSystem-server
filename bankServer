@@ -58,15 +58,14 @@ end
 -- utility functions
 function log(msg)
 	local file = fs.open(BANK_LOG_FILE, "a");
-	file.writeLine("[" .. textutils.formatTime(os.time()) .. ", day: ".. os.day() .. 
-		", realtime: " .. os.epoch("") .. "] " .. msg);
+	file.writeLine("[" .. textutils.formatTime(os.time(), false) .. ", day: ".. os.day() .. "] " .. msg);
 	file.close();
 	print("[log] " .. msg);
 end
 
 function userLog(user, msg) -- log to user log (requestable by user)
 	local file = fs.open(USERS_LOG_DIRECTORY .. user, "a");
-	file.writeLine("[" .. textutils.formatTime(os.time()) .. ", day: ".. os.day() .. "] " .. msg);
+	file.writeLine("[" .. textutils.formatTime(os.time(), false) .. ", day: ".. os.day() .. "] " .. msg);
 	file.close();
 	print("[userlog: " .. user .. "] " .. msg);
 end
