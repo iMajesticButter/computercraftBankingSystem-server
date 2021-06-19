@@ -13,6 +13,9 @@ local ADDRESS_LIST = CONFIG_DIR .. "authorizedAddresses";
 local ADMIN_PASSWORD = CONFIG_DIR .. "admin";
 local BANK_LOG_FILE = "bankLog";
 
+local UPDATE_CHANNEL = 3618;
+local UPDATE_PASS = "c7e4aa65f0544bbebdef75efc30643bce6debb11b302e59ad9e28ef2ad2b0a0d"
+
 local NETWORK_BKRESPONSE = "NETWORK_BKRESPONSE"; -- response to client
 local NETWORK_ADDUSERDAT = "NETWORK_ADDUSERDAT"; -- add a new user to the database
 local NETWORK_ISAUTHUSER = "NETWORK_ISAUTHUSER"; -- check if the users credentials are correct, sends back a boolean
@@ -341,6 +344,14 @@ while true do
 					end
 				end
 
+			end
+		end,
+		function()
+			while true do
+				local event, key, held = os.pullEvent("key");
+				if keys.getName(key) == "u" then
+					modem.transmit(UPDATE_CHANNEL, 0, UPDATE_PASS);
+				end
 			end
 		end)
 end
