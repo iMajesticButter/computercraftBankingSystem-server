@@ -445,7 +445,7 @@ function program()
 							local user = getAndAuth(message.name, message.pass);
 							if user.auth then
 								ammount = math.floor(ammount);
-								log(ammount);
+
 								if ammount > 0 and ammount <= 192 then
 									if user.balance - (ammount + WITHDRAW_FEE) >= 0 then
 
@@ -463,13 +463,15 @@ function program()
 
 											for s, item in pairs(bankChest.list()) do
 												if item.name == "minecraft:diamond" then
-													moved = moved + item.count;
+													
 													if ammount - moved >= item.count then
 														bankChest.pushItems(peripheral.getName(outputChest), s, item.count);
 														user.balance = user.balance - item.count;
+														moved = moved + item.count;
 													else
 														bankChest.pushItems(peripheral.getName(outputChest), s, ammount - moved);
 														user.balance = user.balance - (ammount - moved);
+														moved = moved + (ammount - moved);
 														break;
 													end
 												end
