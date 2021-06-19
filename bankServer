@@ -7,6 +7,9 @@ local s_modem = ecnet.wrap(modem);
 
 local address = ecnet.address;
 
+local bankChest = peripheral.find("minecraft:chest", netFilter);
+local outputChest = peripheral.find("kibe:entangled_chest", netFilter);
+
 local USERS_DIRECTORY = "/users/";
 local USERS_LOG_DIRECTORY = USERS_DIRECTORY .. "/logs/";
 local CONFIG_DIR = "/config/";
@@ -20,6 +23,7 @@ local UPDATE_PASS = "c7e4aa65f0544bbebdef75efc30643bce6debb11b302e59ad9e28ef2ad2
 local PRICE_TABLE = "/prices/";
 
 local TRANSFER_FEE = 0.25;
+local WITHDRAW_FEE = 0.5;
 
 local NETWORK_BKRESPONSE = "NETWORK_BKRESPONSE"; -- response to client
 local NETWORK_ADDUSERDAT = "NETWORK_ADDUSERDAT"; -- add a new user to the database
@@ -32,6 +36,7 @@ local NETWORK_SERCHPRICE = "NETWORK_SERCHPRICE"; -- get a price from the price t
 local NETWORK_CAHRGPRICE = "NETWORK_CAHRGPRICE"; -- charge price
 local NETWORK_TRANSFERDI = "NETWORK_TRANSFERDI"; -- transfer diamonds to another account
 local NETWORK_GETHISTORY = "NETWORK_GETHISTORY"; -- get user account history
+local NETWORK_WITHDRAWDI = "NETWORK_WITHDRAWDI"; -- withdraw diamonds from account and storage into entangled transfer chest, max three stacks at a time
 
 local railFair = 2;
 
@@ -424,6 +429,59 @@ while true do
 						end
 
 						s_modem.send(from, result);
+					elseif message.type == NETWORK_WITHDRAWDI then
+						print ("NETWORK_WITHDRAWDI");
+						log("Withdraw request from: " .. from .. " for user: " .. message.name .. " of ammount: " .. message.val);
+						
+						local succsess = false;
+
+						local authAddr = checkAuthedAddress(from);
+						if authAddr then
+							local ammount = message.val;
+							local user = getAndAuth(message.name, message.pass);
+							if user.auth then
+								ammount = math.floor(ammount);
+								if ammount > 0 and ammount <= 192 then
+									if user.balance - (ammount + WITHDRAW_FEE) >= 0 then
+
+										local found = 0;
+										for slot, item in pairs(bankChest.list()) do
+											if item.name == "minecraft:diamond" then
+												found = found + item.count;
+												--bankChest.pushItems(peripheral.getName(outputChest), slot);
+											end
+										end
+
+										if found >= ammount then
+
+											local moved = 0;
+
+											for slot, item in pairs(bankChest.list()) do
+												if item.name == "minecraft:diamond" then
+													moved = moved + item.count;
+													if ammount - moved >= item.count then
+														bankChest.pushItems(peripheral.getName(outputChest), slot, item.count);
+														user.balance = user.balance - item.count;
+													else
+														bankChest.pushItems(peripheral.getName(outputChest), slot, ammount - moved);
+														user.balance = user.balance - (ammount - moved);
+														break;
+													end
+												end
+											end
+
+											user.balance = user.balance - WITHDRAW_FEE;
+											succsess = true;
+
+										end
+
+									end
+								end
+							end
+						end
+
+						s_modem.send(from, succsess);
+
 					end
 				end
 			end
