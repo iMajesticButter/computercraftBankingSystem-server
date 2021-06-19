@@ -38,8 +38,6 @@ local NETWORK_TRANSFERDI = "NETWORK_TRANSFERDI"; -- transfer diamonds to another
 local NETWORK_GETHISTORY = "NETWORK_GETHISTORY"; -- get user account history
 local NETWORK_WITHDRAWDI = "NETWORK_WITHDRAWDI"; -- withdraw diamonds from account and storage into entangled transfer chest, max three stacks at a time
 
-local railFair = 2;
-
 if not fs.isDir(USERS_DIRECTORY) then
 	print ("creating users directory");
 	fs.makeDir(USERS_DIRECTORY)
@@ -517,8 +515,14 @@ function program()
 					modem.transmit(UPDATE_CHANNEL, 0, UPDATE_PASS);
 					print("starting update");
 					shell.run("/install");
-				end
-				if keys.getName(key) == "x" then
+				elseif keys.getName(key) == "p" then
+					print("enter tag for price");
+					local tag = read();
+					print("enter ammount for price");
+					local amm = tonumber(read());
+
+					setPrice(tag, amm);
+				elseif keys.getName(key) == "x" then
 					running = false;
 					return;
 				end
