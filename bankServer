@@ -349,8 +349,12 @@ while true do
 		function()
 			while true do
 				local event, key, held = os.pullEvent("key");
+				print("keypress");
 				if keys.getName(key) == "u" then
+					print("sending update event");
 					modem.transmit(UPDATE_CHANNEL, 0, UPDATE_PASS);
+					print("starting update");
+					shell.run("/install");
 				end
 			end
 		end)
