@@ -297,7 +297,7 @@ local running = true;
 
 function program()
 	-- main program loop
-	while true do
+	while running do
 		print ("program loop");
 		parallel.waitForAny(
 		function()
@@ -513,6 +513,7 @@ function program()
 					shell.run("/install");
 				end
 				if keys.getName(key) == "x" then
+					running = false;
 					return;
 				end
 			end
