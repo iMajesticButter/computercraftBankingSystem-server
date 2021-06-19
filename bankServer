@@ -477,6 +477,8 @@ function program()
 												end
 											end
 
+
+											userLog("withdrawal of " .. ammount .. " diamonds");
 											user.balance = user.balance - WITHDRAW_FEE;
 											saveUser(user);
 											succsess = true;
