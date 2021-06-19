@@ -292,10 +292,14 @@ end
 print ("ecnet started on address: " .. address);
 
 modem.open(ADDRESS_CHANNEL);
--- main program loop
-while true do
-	print ("program loop");
-	parallel.waitForAny(
+
+local running = true;
+
+function program()
+	-- main program loop
+	while true do
+		print ("program loop");
+		parallel.waitForAny(
 		function()
 			s_modem.listen();
 		end, 
@@ -460,10 +464,10 @@ while true do
 												if item.name == "minecraft:diamond" then
 													moved = moved + item.count;
 													if ammount - moved >= item.count then
-														bankChest.pushItems(peripheral.getName(outputChest), slot, item.count);
+														bankChest.pushItems(peripheral.getName(outputChest), s, item.count);
 														user.balance = user.balance - item.count;
 													else
-														bankChest.pushItems(peripheral.getName(outputChest), slot, ammount - moved);
+														bankChest.pushItems(peripheral.getName(outputChest), s, ammount - moved);
 														user.balance = user.balance - (ammount - moved);
 														break;
 													end
@@ -508,6 +512,14 @@ while true do
 					print("starting update");
 					shell.run("/install");
 				end
+				if keys.getName(key) == "x" then
+					return;
+				end
 			end
 		end)
+	end
+end
+
+while running do
+	pcall(program);
 end
