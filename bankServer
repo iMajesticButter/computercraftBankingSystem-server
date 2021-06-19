@@ -68,7 +68,7 @@ function userLog(user, msg) -- log to user log (requestable by user)
 	local file = fs.open(USERS_LOG_DIRECTORY .. user, "a");
 	file.writeLine("[" .. textutils.formatTime(os.time()) .. ", day: ".. os.day() .. "] " .. msg);
 	file.close();
-	print("[userlog: " .. user .. "] "msg);
+	print("[userlog: " .. user .. "] " .. msg);
 end
 
 function makeSalt()
