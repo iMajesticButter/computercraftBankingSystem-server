@@ -261,6 +261,10 @@ end
 
 function transfer(fromName, fromPassword, toName, ammount)
 
+	if fromName == toName then
+		return false; -- dont transfer to yourself
+	end
+
 	local from = getAndAuth(fromName, fromPassword);
 	local to = getUser(toName);
 
