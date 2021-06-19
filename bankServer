@@ -533,4 +533,5 @@ end
 
 while running do
 	pcall(program);
+	print("program close!");
 end
