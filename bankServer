@@ -445,6 +445,7 @@ function program()
 							local user = getAndAuth(message.name, message.pass);
 							if user.auth then
 								ammount = math.floor(ammount);
+								log(ammount);
 								if ammount > 0 and ammount <= 192 then
 									if user.balance - (ammount + WITHDRAW_FEE) >= 0 then
 
